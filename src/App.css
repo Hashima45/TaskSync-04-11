@@ -1,0 +1,83 @@
+/* App styles */
+
+.tasks-page-enter {
+	animation: tasks-page-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tasks-page-section {
+	opacity: 0;
+	animation: tasks-page-section-enter 0.5s ease-out forwards;
+}
+
+.tasks-page-section:nth-of-type(1) {
+	animation-delay: 0.05s;
+}
+
+.tasks-page-section:nth-of-type(2) {
+	animation-delay: 0.12s;
+}
+
+.tasks-page-section:nth-of-type(3) {
+	animation-delay: 0.18s;
+}
+
+.tasks-page-section:nth-of-type(4) {
+	animation-delay: 0.24s;
+}
+
+.task-card-enter {
+	opacity: 0;
+	transform: translateY(24px) scale(0.985);
+	animation: task-card-enter 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+	box-shadow: 0 10px 30px -22px rgba(79, 70, 229, 0.55);
+}
+
+@keyframes tasks-page-enter {
+	0% {
+		opacity: 0;
+		transform: translateY(18px);
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes tasks-page-section-enter {
+	0% {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes task-card-enter {
+	0% {
+		opacity: 0;
+		transform: translateY(24px) scale(0.985);
+	}
+
+	65% {
+		opacity: 1;
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tasks-page-enter,
+	.tasks-page-section,
+	.task-card-enter {
+		animation: none;
+		opacity: 1;
+		transform: none;
+	}
+}
