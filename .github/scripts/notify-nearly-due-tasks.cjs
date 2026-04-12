@@ -244,7 +244,6 @@ async function checkNearlyDueTasks() {
       const tasksSnapshot = await db
         .collection('tasks')
         .where('user_id', '==', userId)
-        .where('status', '!=', 'completed')
         .get();
 
       // Filter tasks due within 24 hours
@@ -254,6 +253,8 @@ async function checkNearlyDueTasks() {
           ...doc.data(),
         }))
         .filter((task) => {
+          if (task.status === 'completed') return false;
+          if (task.deleted_at) return false;
           const dueDate = task.due_at?.toDate ? task.due_at.toDate() : (task.dueDate ? new Date(task.dueDate) : null);
           if (!dueDate || Number.isNaN(dueDate.getTime())) return false;
           const isDueWithin24h = dueDate >= now && dueDate <= tomorrow;
