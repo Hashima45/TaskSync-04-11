@@ -7,6 +7,8 @@
 
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
 
 // Initialize Firebase Admin
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -36,6 +38,10 @@ const emailTransporter = nodemailer.createTransport({
 });
 
 async function sendNearlyDueNotification(email, userName, tasks) {
+  const logoCid = 'tasksync-logo@tasksync';
+  const logoPath = path.join(process.cwd(), 'src', 'components', '84909b83-0826-4104-9fe4-ff89c0b804e3-removebg-preview.png');
+  const hasLogo = fs.existsSync(logoPath);
+
   // Helper function to get priority badge color
   function getPriorityBadge(priority) {
     const p = (priority || 'medium').toLowerCase();
@@ -160,7 +166,7 @@ async function sendNearlyDueNotification(email, userName, tasks) {
     <div class="container">
       <!-- Header -->
       <div class="header">
-        <h1>📋 TaskSync</h1>
+        ${hasLogo ? `<img src="cid:${logoCid}" alt="TaskSync Logo" style="width: 110px; max-width: 50%; display: block; margin: 0 auto 10px;" />` : '<h1>📋 TaskSync</h1>'}
         <p>Your tasks need attention!</p>
       </div>
 
@@ -209,6 +215,13 @@ async function sendNearlyDueNotification(email, userName, tasks) {
       to: email,
       subject: `⏰ Reminder: ${tasks.length} task(s) due soon`,
       html: htmlContent,
+      attachments: hasLogo
+        ? [{
+            filename: 'tasksync-logo.png',
+            path: logoPath,
+            cid: logoCid,
+          }]
+        : [],
     });
     console.log(`✅ Email sent to ${email}`);
   } catch (error) {
