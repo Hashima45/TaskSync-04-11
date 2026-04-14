@@ -7,6 +7,26 @@
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 
+const NOTIFICATION_TIME_ZONE = 'Asia/Manila';
+
+function formatDateKeyInZone(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: NOTIFICATION_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function isDateOnlyTimestamp(date) {
+  return (
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0 &&
+    date.getUTCMilliseconds() === 0
+  );
+}
+
 async function main() {
   console.log('🚀 Nearly-due notifications scan started');
 
@@ -36,8 +56,7 @@ async function main() {
 
   const now = new Date();
   const next24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  const nowTs = admin.firestore.Timestamp.fromDate(now);
-  const next24hTs = admin.firestore.Timestamp.fromDate(next24h);
+  const tomorrowDateKey = formatDateKeyInZone(next24h);
 
   const usersSnap = await db.collection('users').get();
   let sent = 0;
@@ -51,16 +70,23 @@ async function main() {
       .where('user_id', '==', userDoc.id)
       .get();
 
+    const userTasks = tasksSnap.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+
     // Filter: not completed, not deleted, due within 24 hours
-    const tasks = tasksSnap.docs
-      .map(doc => doc.data())
+    const tasks = userTasks
       .filter(t => {
         if (t.status === 'completed') return false;
         if (t.deleted_at) return false;
         // due_at is a Firestore Timestamp
         const dueDate = t.due_at?.toDate ? t.due_at.toDate() : null;
         if (!dueDate) return false;
-        return dueDate >= now && dueDate <= next24h;
+
+        const isWithinNext24Hours = dueDate > now && dueDate <= next24h;
+        if (isWithinNext24Hours) {
+          return true;
+        }
+
+        return isDateOnlyTimestamp(dueDate) && formatDateKeyInZone(dueDate) === tomorrowDateKey;
       });
 
     if (tasks.length === 0) continue;

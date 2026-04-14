@@ -5,6 +5,26 @@ import {initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
 import * as nodemailer from "nodemailer";
 
+const NOTIFICATION_TIME_ZONE = "Asia/Manila";
+
+function formatDateKeyInZone(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: NOTIFICATION_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function isDateOnlyTimestamp(date: Date): boolean {
+  return (
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0 &&
+    date.getUTCMilliseconds() === 0
+  );
+}
+
 setGlobalOptions({maxInstances: 10});
 
 initializeApp();
@@ -33,6 +53,7 @@ export const checkNearlyDueTasks = onSchedule(
     const db = getFirestore();
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowDateKey = formatDateKeyInZone(tomorrow);
 
     // Create transporter inside handler so secrets are resolved
     const transporter = nodemailer.createTransport({
@@ -44,7 +65,7 @@ export const checkNearlyDueTasks = onSchedule(
     });
 
     console.log(
-      `⏰ Checking for tasks due between ${now.toISOString()} and ${tomorrow.toISOString()}...`
+      `⏰ Checking for tasks due between ${now.toISOString()} and ${tomorrow.toISOString()} (${NOTIFICATION_TIME_ZONE})...`
     );
 
     try {
@@ -70,9 +91,13 @@ export const checkNearlyDueTasks = onSchedule(
           .where("user_id", "==", userId)
           .get();
 
+        const userTasks = tasksSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
         // Filter to nearly-due, non-completed, non-deleted tasks
-        const nearlyDueTasks = tasksSnapshot.docs
-          .map((doc) => ({id: doc.id, ...doc.data()}))
+        const nearlyDueTasks = userTasks
           .filter((task: any) => {
             // Skip completed or deleted tasks
             if (task.status === "completed") return false;
@@ -88,7 +113,12 @@ export const checkNearlyDueTasks = onSchedule(
 
             if (!dueDate || isNaN(dueDate.getTime())) return false;
 
-            return dueDate >= now && dueDate <= tomorrow;
+            const isWithinNext24Hours = dueDate > now && dueDate <= tomorrow;
+            if (isWithinNext24Hours) {
+              return true;
+            }
+
+            return isDateOnlyTimestamp(dueDate) && formatDateKeyInZone(dueDate) === tomorrowDateKey;
           });
 
         // Send email if there are nearly-due tasks

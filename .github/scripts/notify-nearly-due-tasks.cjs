@@ -10,6 +10,26 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
+const NOTIFICATION_TIME_ZONE = 'Asia/Manila';
+
+function formatDateKeyInZone(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: NOTIFICATION_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+function isDateOnlyTimestamp(date) {
+  return (
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0 &&
+    date.getUTCMilliseconds() === 0
+  );
+}
+
 // Initialize Firebase Admin
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
   console.error('❌ FIREBASE_SERVICE_ACCOUNT environment variable is required');
@@ -232,8 +252,9 @@ async function sendNearlyDueNotification(email, userName, tasks) {
 async function checkNearlyDueTasks() {
   const now = new Date();
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const tomorrowDateKey = formatDateKeyInZone(tomorrow);
 
-  console.log(`\n⏰ Checking for tasks due between ${now.toISOString()} and ${tomorrow.toISOString()}...`);
+  console.log(`\n⏰ Checking for tasks due between ${now.toISOString()} and ${tomorrow.toISOString()} (${NOTIFICATION_TIME_ZONE})...`);
 
   try {
     // Get all users
@@ -259,19 +280,26 @@ async function checkNearlyDueTasks() {
         .where('user_id', '==', userId)
         .get();
 
+      const userTasks = tasksSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
       // Filter tasks due within 24 hours
-      const nearlyDueTasks = tasksSnapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
+      const nearlyDueTasks = userTasks
         .filter((task) => {
           if (task.status === 'completed') return false;
           if (task.deleted_at) return false;
           const dueDate = task.due_at?.toDate ? task.due_at.toDate() : (task.dueDate ? new Date(task.dueDate) : null);
           if (!dueDate || Number.isNaN(dueDate.getTime())) return false;
-          const isDueWithin24h = dueDate >= now && dueDate <= tomorrow;
-          return isDueWithin24h;
+
+          const isWithinNext24Hours = dueDate > now && dueDate <= tomorrow;
+          if (isWithinNext24Hours) {
+            return true;
+          }
+
+          // Date-only values are often stored at 00:00:00 UTC; match them by calendar day in local notification timezone.
+          return isDateOnlyTimestamp(dueDate) && formatDateKeyInZone(dueDate) === tomorrowDateKey;
         })
         .sort((a, b) => {
           const dateA = a.due_at?.toDate?.() ?? new Date(a.dueDate);
