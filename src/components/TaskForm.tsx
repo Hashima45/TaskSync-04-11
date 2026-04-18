@@ -20,7 +20,7 @@ interface TaskFormProps {
 const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onClose, initialTask, categories }) => {
   const categoryOptions = Array.from(
     new Map(
-      [...DEFAULT_CATEGORIES, ...categories]
+      DEFAULT_CATEGORIES
         .filter((category) => category.name && category.category_id !== 'other')
         .map((category) => [category.category_id, category])
     ).values()
@@ -228,6 +228,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onClose, initialTask, cat
                     : ''
                 }
                 onChange={(e) => setFormData({ ...formData, dueDate: new Date(e.target.value) })}
+                min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
               />
             </div>

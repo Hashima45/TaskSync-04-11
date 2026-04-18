@@ -17,6 +17,7 @@ interface TasksPageProps {
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
   onNewTask: () => void;
+  onViewSchedule?: (taskId: string) => void;
 }
 
 const priorityChipStyles: Record<Task['priority'], string> = {
@@ -58,15 +59,12 @@ const TasksPage: React.FC<TasksPageProps> = ({
   onDelete,
   onStatusChange,
   onNewTask,
+  onViewSchedule,
 }) => {
   const [query, setQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<'all' | Task['priority']>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [hoveredDoneId, setHoveredDoneId] = useState<string | null>(null);
-
-  // Only show default categories in the filter dropdown.
-  // Custom categories typed by users (e.g. "shopping") appear under "Other".
-  const categoryOptions = DEFAULT_CATEGORY_NAMES;
 
   const filteredTasks = useMemo(() => {
     const loweredQuery = query.trim().toLowerCase();
@@ -182,7 +180,7 @@ const TasksPage: React.FC<TasksPageProps> = ({
           className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none"
         >
           <option value="all">All Categories</option>
-          {categoryOptions.map((category) => (
+          {DEFAULT_CATEGORY_NAMES.map((category) => (
             <option key={category} value={category}>
               {category}
             </option>
@@ -244,10 +242,10 @@ const TasksPage: React.FC<TasksPageProps> = ({
                 
               <button
                 type="button"
-                onClick={() => onEdit(task)}
+                onClick={() => onViewSchedule?.(task.id)}
                 className="text-left"
               >
-                <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 hover:text-indigo-600">
+                <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 hover:text-indigo-600 cursor-pointer">
                   {task.title}
                 </h3>
               </button>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTaskStore } from '@/store/taskStore';
 import { Clock, TrendingUp, TrendingDown, Zap, AlertCircle, CheckCircle, Lock, Coffee } from 'lucide-react';
 
@@ -40,10 +40,23 @@ const confidenceBg = (pct: number) => {
 
 interface AISchedulerPageProps {
   notEnoughDataMessage?: string | null;
+  selectedTaskId?: string | null;
 }
 
-const AISchedulerPage: React.FC<AISchedulerPageProps> = ({ notEnoughDataMessage }) => {
+const AISchedulerPage: React.FC<AISchedulerPageProps> = ({ notEnoughDataMessage, selectedTaskId }) => {
   const aiScheduleResult = useTaskStore((state) => state.getAIScheduleResult());
+
+  // Scroll to selected task when it changes
+  useEffect(() => {
+    if (selectedTaskId) {
+      const element = document.getElementById(`task-${selectedTaskId}`);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+  }, [selectedTaskId]);
 
   // Not enough history — show locked state
   if (notEnoughDataMessage) {
@@ -203,7 +216,11 @@ const AISchedulerPage: React.FC<AISchedulerPageProps> = ({ notEnoughDataMessage 
                         </div>
                       );
                     })()}
-                    <div className="border border-gray-200 rounded-xl p-6 hover:border-indigo-300 hover:shadow-md transition-all">
+                    <div id={`task-${item.task.id}`} className={`border rounded-xl p-6 transition-all ${
+                      selectedTaskId === item.task.id
+                        ? 'border-indigo-500 bg-indigo-50 shadow-lg ring-2 ring-indigo-300'
+                        : 'border-gray-200 hover:border-indigo-300 hover:shadow-md'
+                    }`}>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         {/* Task Info */}
                         <div className="flex-1 min-w-0">

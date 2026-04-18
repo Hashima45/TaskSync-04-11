@@ -85,6 +85,7 @@ const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
   const [schedulingLoading, setSchedulingLoading] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [showScheduleReminder, setShowScheduleReminder] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const { 
     tasks, 
@@ -584,10 +585,14 @@ const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
               onDelete={handleDeleteTask}
               onStatusChange={handleStatusChange}
               onNewTask={handleCreateTask}
+              onViewSchedule={(taskId) => {
+                setSelectedTaskId(taskId);
+                setActiveTab('scheduler');
+              }}
             />
           ) : activeTab === 'scheduler' ? (
             <div className="tasks-page-enter">
-              <AISchedulerPage notEnoughDataMessage={scheduleError} />
+              <AISchedulerPage notEnoughDataMessage={scheduleError} selectedTaskId={selectedTaskId} />
             </div>
           ) : activeTab === 'settings' ? (
             <SettingsPage />

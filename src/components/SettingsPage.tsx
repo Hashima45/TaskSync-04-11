@@ -123,7 +123,16 @@ const SettingsPage: React.FC = () => {
               <option>Focused</option>
               <option>Flexible</option>
             </select>
-            <p className="mt-2 text-sm text-slate-400">Controls task density and buffer time</p>
+            <p className="mt-2 text-sm text-slate-600 font-medium">
+              {schedulingStyle === 'Balanced' && '📊 Use your best productivity hours within your work window. Great balance between focus and flexibility.'}
+              {schedulingStyle === 'Focused' && '🎯 Schedule tasks only during your peak productivity hours. Perfect for deep work and high-priority tasks.'}
+              {schedulingStyle === 'Flexible' && '🔄 Distribute tasks across all available work hours. Maximum flexibility with fewer time constraints.'}
+            </p>
+            {schedulingStyle === 'Focused' && (peakStart < workStart || peakEnd > workEnd) && (
+              <p className="mt-3 rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-sm text-amber-800">
+                ⚠️ <strong>Warning:</strong> Peak hours must be within your work schedule. Currently, peak hours ({formatTime12Hour(peakStart)} - {formatTime12Hour(peakEnd)}) extend outside your work window ({formatTime12Hour(workStart)} - {formatTime12Hour(workEnd)}).
+              </p>
+            )}
           </label>
         </div>
       </section>
